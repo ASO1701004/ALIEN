@@ -4,7 +4,7 @@ const Peer = window.Peer;
   // 操作がDOMをここで取得
   // 自分の
   const localVideo = document.getElementById('js-local-stream');
-  const joinTrigger = document.getElementById('js-join-trigger');
+  // const joinTrigger = document.getElementById('js-join-trigger');
   const leaveTrigger = document.getElementById('js-leave-trigger');
   // 相手の
   // const remoteVideos = document.getElementById('js-remote-streams');
@@ -51,73 +51,74 @@ const Peer = window.Peer;
     key: window.__SKYWAY_KEY__,
     debug: 3,
   }));
+  console.log("さいとう");
 
-  // 「div(joinTrigger)が押される＆既に接続が始まっていなかったら接続」するリスナーを設置
-  joinTrigger.addEventListener('click', () => {
-    // Note that you need to ensure the peer has connected to signaling server
-    // before using methods of peer instance.
-    if (!peer.open) {
-      return;
-    }
-    // 部屋に接続するメソッド（joinRoom）
-    const room = peer.joinRoom(roomId, {
-      mode: getRoomModeByHash(),
-      // stream: localStream,
-      stream: canvas,　//canvasをstreamに渡すと相手に渡せる
-    });
+  // Note that you need to ensure the peer has connected to signaling server
+  // before using methods of peer instance.
+  if (!peer.open) {
+    return;
+  }
+  // 部屋に接続するメソッド（joinRoom）
+  const room = peer.joinRoom(roomId, {
+    mode: getRoomModeByHash(),
+    // stream: localStream,
+    stream: canvas,　//canvasをstreamに渡すと相手に渡せる
+  });
+  console.log("1/room作成後");
 
-    // Render remote stream for new peer join in the room
-    // 重要：　streamの内容に変更があった時（stream）videoタグを作って流す
-    room.on('stream', async stream => {
-      // newVideoオブジェクト(タグ)の生成
-      const newVideo = document.createElement('video');
-      // Webコンテンツ上で表示／再生するメディアのソースとなるストリーム（MediaStream）を取得／設定するために使用する。
-      newVideo.srcObject = stream;
-      // skyWayと接続(ONにする)
-      newVideo.playsInline = true;
-      // mark peerId to find it later at peerLeave event
-      // 誰かが退出した時どの人が退出したかわかるように、data-peer-idを付与
-      newVideo.setAttribute('data-peer-id', stream.peerId);
-      // 配列に追加する(remoteVideosという配列にnewVideoを追加)
-      remoteVideos.append(newVideo);
+  // Render remote stream for new peer join in the room
+  // 重要：　streamの内容に変更があった時（stream）videoタグを作って流す
+  room.on('stream', async stream => {
+    // newVideoオブジェクト(タグ)の生成
+    const newVideo = document.createElement('video');
+    // Webコンテンツ上で表示／再生するメディアのソースとなるストリーム（MediaStream）を取得／設定するために使用する。
+    newVideo.srcObject = stream;
+    // skyWayと接続(ONにする)
+    newVideo.playsInline = true;
+    // mark peerId to find it later at peerLeave event
+    // 誰かが退出した時どの人が退出したかわかるように、data-peer-idを付与
+    newVideo.setAttribute('data-peer-id', stream.peerId);
+    // 配列に追加する(remoteVideosという配列にnewVideoを追加)
+    remoteVideos.append(newVideo);
 
-      // awaitはasync streamの実行を一時停止し、Promiseの解決または拒否を待ちます。
-      await newVideo.play().catch(console.error);
-      count+=1;
-    });
+    // awaitはasync streamの実行を一時停止し、Promiseの解決または拒否を待ちます。
+    await newVideo.play().catch(console.error);
+    count+=1;
+  });
+  
+  // 誰かが退出した場合、div（remoteVideos）内にある任意のdata-peer-idがついたvideoタグの内容を空にして削除する
+  room.on('peerLeave', peerId => {
+    const remoteVideo = remoteVideos.querySelector(
+      `[data-peer-id=${peerId}]`
+    );
+    remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+    remoteVideo.srcObject = null;
+    remoteVideo.remove();
+
+  });
+  // for closing myself(自分の退出)
+  room.once('close', () => {
     
-    // 誰かが退出した場合、div（remoteVideos）内にある任意のdata-peer-idがついたvideoタグの内容を空にして削除する
-    room.on('peerLeave', peerId => {
-      const remoteVideo = remoteVideos.querySelector(
-        `[data-peer-id=${peerId}]`
-      );
+    Array.from(remoteVideos.children).forEach(remoteVideo => {
       remoteVideo.srcObject.getTracks().forEach(track => track.stop());
       remoteVideo.srcObject = null;
       remoteVideo.remove();
-
     });
-    // for closing myself(自分の退出)
-    room.once('close', () => {
-      
-      Array.from(remoteVideos.children).forEach(remoteVideo => {
-        remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-        remoteVideo.srcObject = null;
-        remoteVideo.remove();
-      });
-    });
-   
-    // ボタン（leaveTrigger）を押すとroom.close()を発動
-    leaveTrigger.addEventListener('click', () => {
-      room.close();
-      //ここにHPのURLを記載する/今回はデプロイする前でHPのURLが存在しないためgoogleのURLを記載している
-      window.open('https://www.google.com/', '_self').close();
-    }, 
-    { once: true });
   });
+  
+  // ボタン（leaveTrigger）を押すとroom.close()を発動
+  leaveTrigger.addEventListener('click', () => {
+    console.log("2/leave処理");
+    room.close();
+    //ここにHPのURLを記載する/今回はデプロイする前でHPのURLが存在しないためgoogleのURLを記載している
+    window.open('https://kg-alien.herokuapp.com/HP.html', '_self').close();
+  }, 
+  { once: true });
 
   //追加機能share
   var copy_url = document.URL
   shareTrigger.addEventListener('click',() => {
+    console.log("3/share処理")
     shared_url_copy(copy_url);
     alert("コピーできました");
   });
@@ -141,11 +142,14 @@ const Peer = window.Peer;
   });
 
   //URLのGETパラメータを取得
-  function getParam(){
-    let params = (new URL(document.location)).searchParams;
-    let roomId = params.get('roomid');
-    return roomId;
-  }
+function getParam(){
+  console.log("param取得");
+  let params = (new URL(document.location)).searchParams;
+  let roomId = params.get('roomid');
+  return roomId;
+}
+  
   peer.on('error', console.error);
 })();
+
 
