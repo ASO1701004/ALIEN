@@ -53,8 +53,46 @@ const Peer = window.Peer;
   }));
   console.log("さいとう");
 
+  join_room();
+  
+  //追加機能share
+  var copy_url = document.URL
+  shareTrigger.addEventListener('click',() => {
+    console.log("3/share処理")
+    shared_url_copy(copy_url);
+    alert("コピーできました");
+  });
+  
+  const toggleCamera = document.getElementById('js-toggle-camera');
+  const toggleMicrophone = document.getElementById('js-toggle-microphone');
+  //ボタン押した時のカメラ関係の動作
+  toggleCamera.addEventListener('click', () => {
+    const videoTracks = localStream.getVideoTracks()[0];
+    videoTracks.enabled = !videoTracks.enabled;
+    console.log(videoTracks.enabled)
+    console.log()
+    toggleCamera.textContent = `カメラ${videoTracks.enabled ? 'ON' : 'OFF'}`;
+  });
+  //ボタン押した時のマイク関係の動作
+  toggleMicrophone.addEventListener('click', () => {
+    const audioTracks = localStream.getAudioTracks()[0];
+    audioTracks.enabled = !audioTracks.enabled;
+    console.log(audioTracks.enabled)
+    toggleMicrophone.textContent = `マイク${audioTracks.enabled ? 'ON' : 'OFF'}`;
+  });
+
+  //URLのGETパラメータを取得
+function getParam(){
+  console.log("param取得");
+  let params = (new URL(document.location)).searchParams;
+  let roomId = params.get('roomid');
+  return roomId;
+}
+
+function join_room(){
   // Note that you need to ensure the peer has connected to signaling server
   // before using methods of peer instance.
+  console.log("if手前");
   if (!peer.open) {
     return;
   }
@@ -115,38 +153,6 @@ const Peer = window.Peer;
   }, 
   { once: true });
 
-  //追加機能share
-  var copy_url = document.URL
-  shareTrigger.addEventListener('click',() => {
-    console.log("3/share処理")
-    shared_url_copy(copy_url);
-    alert("コピーできました");
-  });
-  
-  const toggleCamera = document.getElementById('js-toggle-camera');
-  const toggleMicrophone = document.getElementById('js-toggle-microphone');
-  //ボタン押した時のカメラ関係の動作
-  toggleCamera.addEventListener('click', () => {
-    const videoTracks = localStream.getVideoTracks()[0];
-    videoTracks.enabled = !videoTracks.enabled;
-    console.log(videoTracks.enabled)
-    console.log()
-    toggleCamera.textContent = `カメラ${videoTracks.enabled ? 'ON' : 'OFF'}`;
-  });
-  //ボタン押した時のマイク関係の動作
-  toggleMicrophone.addEventListener('click', () => {
-    const audioTracks = localStream.getAudioTracks()[0];
-    audioTracks.enabled = !audioTracks.enabled;
-    console.log(audioTracks.enabled)
-    toggleMicrophone.textContent = `マイク${audioTracks.enabled ? 'ON' : 'OFF'}`;
-  });
-
-  //URLのGETパラメータを取得
-function getParam(){
-  console.log("param取得");
-  let params = (new URL(document.location)).searchParams;
-  let roomId = params.get('roomid');
-  return roomId;
 }
   
   peer.on('error', console.error);
